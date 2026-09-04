@@ -30,6 +30,8 @@ def upload_image(file):
 def get_image_url(blob_name):
     if not blob_name:
         return None
+    if blob_name.startswith("uploads/"):
+        return None
     account_name = os.environ.get("AZURE_STORAGE_ACCOUNT", "smartdriveimages")
     container_name = os.environ.get("AZURE_STORAGE_CONTAINER", "car-images")
     return f"https://{account_name}.blob.core.windows.net/{container_name}/{blob_name}"
