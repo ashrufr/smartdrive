@@ -567,6 +567,36 @@ def edit_car(car_id):
     return render_template("edit_car.html", car=car, user=get_user())
 
 
+@app.route("/car/<int:car_id>/delete", methods=["POST"])
+def delete_car(car_id):
+    if "user_id" not in session:
+        flash("Please login to delete a listing.", "error")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM SD_cars WHERE id = %s", (car_id,))
+    car = dict_from_row(cur, cur.fetchone())
+
+    if not car:
+        db.close()
+        flash("Car not found.", "error")
+        return redirect(url_for("index"))
+
+    if car["user_id"] != session["user_id"]:
+        db.close()
+        flash("You can only delete your own listings.", "error")
+        return redirect(url_for("car_detail", car_id=car_id))
+
+    delete_image(car["image_url"])
+    cur.execute("DELETE FROM SD_cars WHERE id = %s", (car_id,))
+    db.commit()
+    db.close()
+
+    flash("Listing deleted.", "success")
+    return redirect(url_for("my_listings"))
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
