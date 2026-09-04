@@ -1,4 +1,4 @@
-import pyodbc
+import pymssql
 import os
 
 
@@ -6,8 +6,32 @@ def get_db():
     conn_str = os.environ.get("AZURE_SQL_CONNECTION")
     if not conn_str:
         raise RuntimeError("AZURE_SQL_CONNECTION environment variable is not set")
-    conn = pyodbc.connect(conn_str)
-    conn.autocommit = False
+
+    params = {}
+    for part in conn_str.split(";"):
+        part = part.strip()
+        if "=" in part:
+            key, value = part.split("=", 1)
+            key = key.strip().upper()
+            value = value.strip()
+            if key == "SERVER":
+                host = value.split(",")[0]
+                host = host.replace("tcp:", "")
+                params["server"] = host
+            elif key == "DATABASE":
+                params["database"] = value
+            elif key == "UID":
+                params["user"] = value
+            elif key == "PWD":
+                params["password"] = value
+            elif key == "PORT":
+                params["port"] = int(value)
+
+    conn = pymssql.connect(user=params.get("user"),
+                           password=params.get("password"),
+                           server=params.get("server"),
+                           database=params.get("database"),
+                           port=params.get("port", 1433))
     return conn
 
 
