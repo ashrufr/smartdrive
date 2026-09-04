@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Test Email - SmartDrive{% endblock %}
+{% block content %}
+<div class="auth-form">
+    <h2>Test Email Sending</h2>
+    <p style="color:#666; margin-bottom:1.5rem; text-align:center; font-size:0.9rem;">
+        Using: {{ config.get('GMAIL_SMTP_USER', 'Not configured') }}
+    </p>
+    <form method="POST">
+        <label for="to_email">Send To</label>
+        <input type="email" id="to_email" name="to_email" placeholder="recipient@example.com" required>
+
+        <label for="subject">Subject</label>
+        <input type="text" id="subject" name="subject" placeholder="Test Email from SmartDrive" required>
+
+        <label for="body">Message (HTML supported)</label>
+        <textarea id="body" name="body" rows="6" placeholder="<h1>Hello!</h1><p>This is a test email.</p>" required></textarea>
+
+        <button type="submit" class="btn btn-primary btn-block">Send Test Email</button>
+    </form>
+</div>
+{% endblock %}

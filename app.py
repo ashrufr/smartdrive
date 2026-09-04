@@ -342,6 +342,29 @@ def search():
     return render_template("index.html", cars=cars, user=get_user(), query=query)
 
 
+from email_utils import send_email
+
+@app.route("/test-email", methods=["GET", "POST"])
+def test_email():
+    if request.method == "POST":
+        to_email = request.form.get("to_email", "").strip()
+        subject = request.form.get("subject", "").strip()
+        body = request.form.get("body", "").strip()
+
+        if not to_email or not subject or not body:
+            flash("All fields are required.", "error")
+            return render_template("test_email.html", user=get_user())
+
+        try:
+            send_email(to_email, subject, body)
+            flash(f"Email sent successfully to {to_email}!", "success")
+        except Exception as e:
+            flash(f"Failed to send email: {str(e)}", "error")
+
+        return redirect(url_for("test_email"))
+    return render_template("test_email.html", user=get_user())
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)
