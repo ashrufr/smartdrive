@@ -79,7 +79,7 @@ a { text-decoration: none; color: inherit; }
     border-radius: 10px;
     font-weight: 700;
 }
-.nav-user { color: #e94560; font-weight: 600; }
+.nav-user { color: #e94560 !important; font-weight: 700; background: rgba(233,69,96,0.1); padding: 0.3rem 0.8rem; border-radius: 6px; }
 
 /* Buttons */
 .btn {
