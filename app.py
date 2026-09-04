@@ -347,6 +347,7 @@ from email_utils import send_email
 
 @app.route("/test-email", methods=["GET", "POST"])
 def test_email():
+    gmail_user = os.environ.get("GMAIL_SMTP_USER", "Not configured")
     if request.method == "POST":
         to_email = request.form.get("to_email", "").strip()
         subject = request.form.get("subject", "").strip()
@@ -354,7 +355,7 @@ def test_email():
 
         if not to_email or not subject or not body:
             flash("All fields are required.", "error")
-            return render_template("test_email.html", user=get_user())
+            return render_template("test_email.html", user=get_user(), gmail_user=gmail_user)
 
         try:
             send_email(to_email, subject, body)
@@ -363,7 +364,7 @@ def test_email():
             flash(f"Failed to send email: {str(e)}", "error")
 
         return redirect(url_for("test_email"))
-    return render_template("test_email.html", user=get_user())
+    return render_template("test_email.html", user=get_user(), gmail_user=gmail_user)
 
 
 if __name__ == "__main__":

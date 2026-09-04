@@ -4,7 +4,7 @@
 <div class="auth-form">
     <h2>Test Email Sending</h2>
     <p style="color:#666; margin-bottom:1.5rem; text-align:center; font-size:0.9rem;">
-        Using: {{ config.get('GMAIL_SMTP_USER', 'Not configured') }}
+        Using: {{ gmail_user }}
     </p>
     <form method="POST">
         <label for="to_email">Send To</label>
