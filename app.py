@@ -2,7 +2,9 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from db import get_db, init_db, dict_from_row, dict_from_rows
+from email_utils import send_email
 from datetime import datetime, timedelta
+from urllib.parse import urljoin
 import secrets
 import os
 
@@ -28,6 +30,20 @@ def get_user():
         db.close()
         return user
     return None
+
+
+def send_verification_email(user_email, token):
+    verify_url = urljoin(request.host_url, url_for("verify_email", token=token))
+    subject = "Verify your email - SmartDrive"
+    body = f"""
+    <h2>Welcome to SmartDrive!</h2>
+    <p>Please verify your email address by clicking the link below:</p>
+    <p><a href="{verify_url}" style="background:#e94560;color:#fff;padding:12px 24px;text-decoration:none;border-radius:6px;display:inline-block;">Verify Email</a></p>
+    <p>Or copy this link: {verify_url}</p>
+    <p>This link expires in 24 hours.</p>
+    <p>If you did not create an account, please ignore this email.</p>
+    """
+    send_email(user_email, subject, body)
 
 
 @app.before_request
@@ -59,6 +75,10 @@ def require_verification():
             db2.commit()
             db2.close()
             session["verify_email_token"] = token
+            try:
+                send_verification_email(user["email"], token)
+            except Exception:
+                pass
         return redirect(url_for("verify_email_sent"))
 
 
@@ -117,7 +137,13 @@ def register():
 
         session["user_id"] = user["id"]
         session["verify_email_token"] = token
-        flash("Account created! Please verify your email.", "success")
+
+        try:
+            send_verification_email(email, token)
+            flash("Account created! Please check your email to verify.", "success")
+        except Exception as e:
+            flash("Account created! Email could not be sent. Please contact support.", "error")
+
         return redirect(url_for("verify_email_sent"))
     return render_template("register.html", user=get_user())
 
@@ -190,7 +216,13 @@ def resend_email():
     db.close()
 
     session["verify_email_token"] = token
-    flash("Verification email resent.", "success")
+
+    try:
+        send_verification_email(user["email"], token)
+        flash("Verification email resent. Please check your inbox.", "success")
+    except Exception:
+        flash("Email could not be sent. Please try again later.", "error")
+
     return redirect(url_for("verify_email_sent"))
 
 
@@ -221,6 +253,10 @@ def login():
                 db2.commit()
                 db2.close()
                 session["verify_email_token"] = token
+                try:
+                    send_verification_email(user["email"], token)
+                except Exception:
+                    pass
                 return redirect(url_for("verify_email_sent"))
             flash("Welcome back!", "success")
             return redirect(url_for("index"))
@@ -342,8 +378,6 @@ def search():
     db.close()
     return render_template("index.html", cars=cars, user=get_user(), query=query)
 
-
-from email_utils import send_email
 
 @app.route("/test-email", methods=["GET", "POST"])
 def test_email():

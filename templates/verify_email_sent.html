@@ -1,22 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Verify Your Email - SmartDrive{% endblock %}
+{% block title %}Check Your Email - SmartDrive{% endblock %}
 {% block content %}
 <div class="verify-container">
     <div class="verify-card">
         <div class="verify-icon">&#9993;</div>
-        <h2>Verify Your Email</h2>
-        <p>We sent a verification email to <strong>{{ user.email }}</strong>.</p>
-        <p>Click the link below to verify your account:</p>
+        <h2>Check Your Email</h2>
+        <p>We've sent a verification link to <strong>{{ user.email }}</strong>.</p>
+        <p>Click the link in the email to verify your account.</p>
 
-        <div class="verify-link-box">
-            <code>{{ url_for('verify_email', token=token, _external=True) }}</code>
-        </div>
-
-        <p class="verify-note">In a production app, this link would be sent via email. Click it to activate your account.</p>
-
-        <div class="verify-actions">
-            <p class="verify-note">Copy the link above and open it in a new tab to verify your email.</p>
-        </div>
+        <p class="verify-note">The link expires in 24 hours.</p>
 
         <div class="verify-footer">
             <p>Didn't receive the email?</p>
