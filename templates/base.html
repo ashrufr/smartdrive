@@ -17,7 +17,7 @@
             {% if user %}
                 <a href="{{ url_for('sell') }}" class="btn btn-primary">Sell Car</a>
                 <a href="{{ url_for('my_listings') }}">My Listings</a>
-                <a href="{{ url_for('messages') }}">Messages</a>
+                <a href="{{ url_for('messages') }}" id="messagesLink">Messages <span id="unreadBadge" class="badge" style="display:none">0</span></a>
                 <a href="{{ url_for('dashboard') }}">{{ user.username }}</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
             {% else %}
@@ -42,5 +42,26 @@
     <footer class="footer">
         <p>&copy; 2026 SmartDrive. All rights reserved.</p>
     </footer>
+
+    {% if user %}
+    <script>
+    function checkUnread() {
+        fetch('/api/messages/unread')
+            .then(r => r.json())
+            .then(data => {
+                const badge = document.getElementById('unreadBadge');
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline';
+                } else {
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(() => {});
+    }
+    checkUnread();
+    setInterval(checkUnread, 10000);
+    </script>
+    {% endif %}
 </body>
 </html>

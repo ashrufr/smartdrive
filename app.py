@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from db import get_db, init_db, dict_from_row, dict_from_rows
@@ -702,6 +702,58 @@ def message_thread(car_id, other_user_id):
 
     return render_template("message_thread.html", thread=thread, car_id=car_id, car_title=car_title,
                            other_name=other_name, other_user_id=other_user_id, user=get_user())
+
+
+@app.route("/api/messages/<int:car_id>/<int:other_user_id>/poll")
+def poll_messages(car_id, other_user_id):
+    if "user_id" not in session:
+        return jsonify({"error": "not logged in"}), 401
+
+    last_id = request.args.get("last_id", 0, type=int)
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("""
+        SELECT m.id, m.message, m.sender_id, m.created_at, u.username as sender_name
+        FROM SD_messages m
+        JOIN SD_users u ON m.sender_id = u.id
+        WHERE m.car_id = %s
+          AND m.id > %s
+          AND ((m.sender_id = %s AND m.receiver_id = %s) OR (m.sender_id = %s AND m.receiver_id = %s))
+        ORDER BY m.created_at ASC
+    """, (car_id, last_id, session["user_id"], other_user_id, other_user_id, session["user_id"]))
+    rows = cur.fetchall()
+
+    messages = []
+    for row in rows:
+        messages.append({
+            "id": row[0],
+            "message": row[1],
+            "sender_id": row[2],
+            "created_at": row[3].strftime("%d %b %Y, %H:%M"),
+            "sender_name": row[4],
+        })
+
+    cur.execute("UPDATE SD_messages SET is_read = 1 WHERE car_id = %s AND sender_id = %s AND receiver_id = %s AND is_read = 0 AND id > %s",
+                (car_id, other_user_id, session["user_id"], last_id))
+    db.commit()
+    db.close()
+
+    return jsonify({"messages": messages})
+
+
+@app.route("/api/messages/unread")
+def unread_count():
+    if "user_id" not in session:
+        return jsonify({"count": 0})
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT COUNT(*) FROM SD_messages WHERE receiver_id = %s AND is_read = 0", (session["user_id"],))
+    count = cur.fetchone()[0]
+    db.close()
+
+    return jsonify({"count": count})
 
 
 @app.route("/messages/<int:car_id>/<int:other_user_id>/reply", methods=["POST"])
