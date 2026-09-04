@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Sell Your Car - SmartDrive{% endblock %}
+{% block content %}
+<div class="sell-form">
+    <h2>List Your Car for Sale</h2>
+    <form method="POST" enctype="multipart/form-data" id="sellForm">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="title">Listing Title *</label>
+                <input type="text" id="title" name="title" placeholder="2020 Toyota Camry SE" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="make">Make *</label>
+                <select id="make" name="make" required>
+                    <option value="">Select Make</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="model">Model *</label>
+                <select id="model" name="model" required disabled>
+                    <option value="">Select Model</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="year">Year *</label>
+                <input type="number" id="year" name="year" min="1900" max="2027" required>
+            </div>
+            <div class="form-group">
+                <label for="price">Price (ZAR) *</label>
+                <input type="number" id="price" name="price" min="0" step="1000" required>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="mileage">Mileage</label>
+                <input type="number" id="mileage" name="mileage" min="0">
+            </div>
+            <div class="form-group">
+                <label for="color">Color</label>
+                <input type="text" id="color" name="color" placeholder="White">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="fuel_type">Fuel Type</label>
+                <select id="fuel_type" name="fuel_type">
+                    <option value="Petrol">Petrol</option>
+                    <option value="Diesel">Diesel</option>
+                    <option value="Electric">Electric</option>
+                    <option value="Hybrid">Hybrid</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="transmission">Transmission</label>
+                <select id="transmission" name="transmission">
+                    <option value="Automatic">Automatic</option>
+                    <option value="Manual">Manual</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="image">Car Photo *</label>
+            <div class="file-upload">
+                <input type="file" id="image" name="image" accept="image/*" required>
+                <label for="image" class="file-upload-label">Choose a photo or drag it here</label>
+            </div>
+            <div id="imagePreview" class="image-preview" style="display:none">
+                <img id="previewImg" src="" alt="Preview">
+                <button type="button" class="btn-remove" onclick="removeImage()">Remove</button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" rows="4" placeholder="Tell buyers about your car..."></textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="submitBtn" disabled>List Car for Sale</button>
+    </form>
+</div>
+
+<script>
+const carData = {
+    "Audi": ["A1", "A3", "A4", "A5", "A6", "A7", "A8", "Q2", "Q3", "Q5", "Q7", "Q8", "e-tron", "TT", "R8"],
+    "BMW": ["1 Series", "2 Series", "3 Series", "4 Series", "5 Series", "6 Series", "7 Series", "8 Series", "X1", "X2", "X3", "X4", "X5", "X6", "X7", "Z4", "iX3", "i4", "iX"],
+    "Chevrolet": ["Spark", "Sonic", "Cruze", "Captiva", "Trailblazer", "Utility"],
+    "Citroen": ["C3", "C4", "C5", "Berlingo", "Dispatch"],
+    "Daihatsu": ["Terios", "Sirion", "Copen"],
+    "Fiat": ["500", "Panda", "Tipo", "500X", "Ducato"],
+    "Ford": ["Fiesta", "Focus", "Mondeo", "Ranger", "Everest", "EcoSport", "Territory", "Mustang", "Transit"],
+    "Haval": ["Jolion", "H6", "H9"],
+    "Honda": ["Brio", "Jazz", "Civic", "Accord", "HR-V", "CR-V", "BR-V", "WR-V"],
+    "Hyundai": ["i10", "i20", "i30", "Tucson", "Santa Fe", "Creta", "Venue", "Kona", "Palisade"],
+    "Isuzu": ["D-Max", "mu-X"],
+    "Jaguar": ["F-Pace", "I-Pace", "E-Pace", "XE", "XF", "XJ", "F-Type"],
+    "Jeep": ["Renegade", "Compass", "Cherokee", "Grand Cherokee", "Wrangler"],
+    "Kia": ["Picanto", "Rio", "Stonic", "Seltos", "Sportage", "Sorento", "Carnival", "Sonet", "EV6"],
+    "Land Rover": ["Defender", "Discovery", "Discovery Sport", "Range Rover", "Range Rover Evoque", "Range Rover Sport", "Range Rover Velar"],
+    "Lexus": ["UX", "NX", "RX", "LX", "ES", "IS", "GS", "LC"],
+    "Mahindra": ["Thar", "XUV700", "Scorpio", "Bolero", "XUV300", "KUV100"],
+    "Mazda": ["2", "3", "6", "CX-3", "CX-30", "CX-5", "CX-8", "BT-50"],
+    "Mercedes-Benz": ["A-Class", "B-Class", "C-Class", "E-Class", "S-Class", "CLA", "CLS", "GLA", "GLB", "GLC", "GLE", "GLS", "AMG GT", "EQC", "EQA", "EQB"],
+    "Mini": ["3 Door", "5 Door", "Clubman", "Countryman", "Convertible"],
+    "Mitsubishi": ["Mirage", "ASX", "Outlander", "Pajero Sport", "Triton", "Xpander"],
+    "Nissan": ["Micra", "Almera", "Qashqai", "X-Trail", "Patrol", "NP200", "Navara", "Juke", "Ariya"],
+    "Peugeot": ["108", "208", "308", "508", "2008", "3008", "5008", "Rifter", "Partner"],
+    "Renault": ["Clio", "Captur", "Koleos", "Megane", "Kadjar", "Kiger", "Duster", "Triber"],
+    "Seat": ["Ibiza", "Leon", "Arona", "Ateca", "Tarraco"],
+    "Skoda": ["Fabia", "Octavia", "Superb", "Kamiq", "Karoq", "Kodiaq", "Kushaq"],
+    "SsangYong": ["Tivoli", "Korando", "Rexton", "Musso", "Actyon"],
+    "Subaru": ["XV", "Forester", "Outback", "Impreza", "WRX", "BRZ"],
+    "Suzuki": ["Alto", "Celerio", "Swift", "Baleno", "Dzire", "Vitara", "Jimny", "Ertiga", "S-Presso", "Ignis"],
+    "Toyota": ["Aygo", "Yaris", "Corolla", "Camry", "C-HR", "RAV4", "Fortuner", "Land Cruiser", "Prado", "Hilux", "HiAce", "Supra", "GR86", "Rav4", "Urban Cruiser"],
+    "Volkswagen": ["Polo", "Golf", "Jetta", "Passat", "T-Cross", "T-Roc", "Tiguan", "Touareg", "Caddy", "Transporter", "Amarok", "ID.3", "ID.4"],
+    "Volvo": ["XC40", "XC60", "XC90", "V40", "V60", "V90", "S60", "S90", "C40", "EX30", "EX90"]
+};
+
+const makeSelect = document.getElementById('make');
+const modelSelect = document.getElementById('model');
+
+Object.keys(carData).sort().forEach(make => {
+    const option = document.createElement('option');
+    option.value = make;
+    option.textContent = make;
+    makeSelect.appendChild(option);
+});
+
+makeSelect.addEventListener('change', function() {
+    const selectedMake = this.value;
+    modelSelect.innerHTML = '<option value="">Select Model</option>';
+    if (selectedMake && carData[selectedMake]) {
+        modelSelect.disabled = false;
+        carData[selectedMake].forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            modelSelect.appendChild(option);
+        });
+    } else {
+        modelSelect.disabled = true;
+    }
+    checkForm();
+});
+
+const form = document.getElementById('sellForm');
+const submitBtn = document.getElementById('submitBtn');
+const requiredFields = form.querySelectorAll('[required]');
+
+function checkForm() {
+    let allFilled = true;
+    requiredFields.forEach(field => {
+        if (field.type === 'file' && !field.files.length) {
+            allFilled = false;
+        } else if (field.type !== 'file' && !field.value.trim()) {
+            allFilled = false;
+        }
+    });
+    submitBtn.disabled = !allFilled;
+}
+
+requiredFields.forEach(field => {
+    field.addEventListener('input', checkForm);
+    field.addEventListener('change', checkForm);
+});
+
+const imageInput = document.getElementById('image');
+const preview = document.getElementById('imagePreview');
+const previewImg = document.getElementById('previewImg');
+
+imageInput.addEventListener('change', function() {
+    if (this.files && this.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.style.display = 'block';
+        };
+        reader.readAsDataURL(this.files[0]);
+    }
+    checkForm();
+});
+
+function removeImage() {
+    imageInput.value = '';
+    preview.style.display = 'none';
+    previewImg.src = '';
+    checkForm();
+}
+</script>
+{% endblock %}

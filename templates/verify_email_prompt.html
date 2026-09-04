@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Email Not Verified - SmartDrive{% endblock %}
+{% block content %}
+<div class="verify-container">
+    <div class="verify-card">
+        <div class="verify-icon">&#9888;</div>
+        <h2>Email Not Verified</h2>
+        <p>Your email <strong>{{ user.email }}</strong> has not been verified yet.</p>
+        <p>Please verify your email to access all features of SmartDrive.</p>
+
+        <div class="verify-actions">
+            <form method="POST" action="{{ url_for('resend_email') }}" style="display:inline">
+                <button type="submit" class="btn btn-primary btn-block">
+                    Send Verification Email
+                </button>
+            </form>
+        </div>
+
+        <div class="verify-footer">
+            <a href="{{ url_for('logout') }}">Use a different account</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SmartDrive{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <a href="{{ url_for('index') }}" class="nav-brand">SmartDrive</a>
+        <form class="search-form" action="{{ url_for('search') }}" method="GET">
+            <input type="text" name="q" placeholder="Search cars..." value="{{ request.args.get('q', '') }}">
+            <button type="submit">Search</button>
+        </form>
+        <div class="nav-links">
+            {% if user %}
+                <a href="{{ url_for('sell') }}" class="btn btn-primary">Sell Car</a>
+                <a href="{{ url_for('my_listings') }}">My Listings</a>
+                <span class="nav-user">{{ user.username }}</span>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
+            {% else %}
+                <a href="{{ url_for('login') }}">Login</a>
+                <a href="{{ url_for('register') }}" class="btn btn-primary">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash flash-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 SmartDrive. All rights reserved.</p>
+    </footer>
+</body>
+</html>

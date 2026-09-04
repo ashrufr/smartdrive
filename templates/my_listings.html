@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}My Listings - SmartDrive{% endblock %}
+{% block content %}
+<h2>My Listings</h2>
+
+<div class="car-grid">
+    {% for car in cars %}
+    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="car-card">
+        <div class="car-image">
+            {% if car.image_url %}
+                <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+            {% else %}
+                <div class="car-placeholder">No Image</div>
+            {% endif %}
+            {% if car.is_sold %}
+                <div class="sold-overlay">SOLD</div>
+            {% endif %}
+        </div>
+        <div class="car-info">
+            <h3>{{ car.title }}</h3>
+            <p class="car-meta">{{ car.year }} &middot; {{ car.mileage|int }} mi</p>
+            <p class="car-price">${{ "{:,.0f}".format(car.price) }}</p>
+        </div>
+    </a>
+    {% else %}
+    <div class="empty-state">
+        <h2>No listings yet</h2>
+        <p>You haven't listed any cars for sale.</p>
+        <a href="{{ url_for('sell') }}" class="btn btn-primary">Sell Your First Car</a>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

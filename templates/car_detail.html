@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ car.title }} - SmartDrive{% endblock %}
+{% block content %}
+<div class="car-detail">
+    <div class="car-detail-image">
+        {% if car.image_url %}
+            <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+        {% else %}
+            <div class="car-placeholder-large">No Image Available</div>
+        {% endif %}
+        {% if car.is_sold %}
+            <div class="sold-badge">SOLD</div>
+        {% endif %}
+    </div>
+
+    <div class="car-detail-info">
+        <h1>{{ car.title }}</h1>
+        <p class="car-detail-price">${{ "{:,.0f}".format(car.price) }}</p>
+
+        <div class="car-specs">
+            <div class="spec">
+                <span class="spec-label">Make</span>
+                <span>{{ car.make }}</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Model</span>
+                <span>{{ car.model }}</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Year</span>
+                <span>{{ car.year }}</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Mileage</span>
+                <span>{{ "{:,}".format(car.mileage) }} mi</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Color</span>
+                <span>{{ car.color or 'N/A' }}</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Fuel</span>
+                <span>{{ car.fuel_type }}</span>
+            </div>
+            <div class="spec">
+                <span class="spec-label">Transmission</span>
+                <span>{{ car.transmission }}</span>
+            </div>
+        </div>
+
+        {% if car.description %}
+        <div class="car-description">
+            <h3>Description</h3>
+            <p>{{ car.description }}</p>
+        </div>
+        {% endif %}
+
+        <div class="seller-info">
+            <h3>Seller Information</h3>
+            <p><strong>{{ car.seller }}</strong></p>
+            <p>Email: {{ car.seller_email }}</p>
+            {% if car.seller_phone %}
+            <p>Phone: {{ car.seller_phone }}</p>
+            {% endif %}
+        </div>
+
+        {% if user and user.id == car.user_id and not car.is_sold %}
+        <form method="POST" action="{{ url_for('mark_sold', car_id=car.id) }}">
+            <button type="submit" class="btn btn-sold" onclick="return confirm('Mark as sold?')">
+                Mark as Sold
+            </button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
