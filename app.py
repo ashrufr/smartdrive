@@ -25,7 +25,7 @@ def get_user():
     if "user_id" in session:
         db = get_db()
         cur = db.cursor()
-        cur.execute("SELECT * FROM SD_users WHERE id = ?", (session["user_id"],))
+        cur.execute("SELECT * FROM SD_users WHERE id = %s", (session["user_id"],))
         user = dict_from_row(cur, cur.fetchone())
         db.close()
         return user
@@ -57,7 +57,7 @@ def require_verification():
         return
     db = get_db()
     cur = db.cursor()
-    cur.execute("SELECT email_verified FROM SD_users WHERE id = ?", (session["user_id"],))
+    cur.execute("SELECT email_verified FROM SD_users WHERE id = %s", (session["user_id"],))
     user = dict_from_row(cur, cur.fetchone())
     db.close()
     if user and not user["email_verified"]:
@@ -67,9 +67,9 @@ def require_verification():
             expires = datetime.utcnow() + timedelta(hours=24)
             db2 = get_db()
             cur2 = db2.cursor()
-            cur2.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = ?", (session["user_id"],))
+            cur2.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = %s", (session["user_id"],))
             cur2.execute(
-                "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)",
+                "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (%s, %s, %s)",
                 (session["user_id"], token, expires.isoformat()),
             )
             db2.commit()
@@ -109,7 +109,7 @@ def register():
         db = get_db()
         cur = db.cursor()
         cur.execute(
-            "SELECT id FROM SD_users WHERE username = ? OR email = ?", (username, email)
+            "SELECT id FROM SD_users WHERE username = %s OR email = %s", (username, email)
         )
         existing = cur.fetchone()
         if existing:
@@ -118,18 +118,18 @@ def register():
             return render_template("register.html", user=None)
 
         cur.execute(
-            "INSERT INTO SD_users (username, email, password_hash, phone) VALUES (?, ?, ?, ?)",
+            "INSERT INTO SD_users (username, email, password_hash, phone) VALUES (%s, %s, %s, %s)",
             (username, email, generate_password_hash(password), phone),
         )
         db.commit()
 
-        cur.execute("SELECT * FROM SD_users WHERE username = ?", (username,))
+        cur.execute("SELECT * FROM SD_users WHERE username = %s", (username,))
         user = dict_from_row(cur, cur.fetchone())
 
         token = secrets.token_urlsafe(32)
         expires = datetime.utcnow() + timedelta(hours=24)
         cur.execute(
-            "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)",
+            "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (%s, %s, %s)",
             (user["id"], token, expires.isoformat()),
         )
         db.commit()
@@ -162,7 +162,7 @@ def verify_email(token):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT * FROM SD_email_verifications WHERE token = ? AND used = 0", (token,)
+        "SELECT * FROM SD_email_verifications WHERE token = %s AND used = 0", (token,)
     )
     row = dict_from_row(cur, cur.fetchone())
 
@@ -177,8 +177,8 @@ def verify_email(token):
         db.close()
         return redirect(url_for("resend_email"))
 
-    cur.execute("UPDATE SD_users SET email_verified = 1, verified = 'Yes' WHERE id = ?", (row["user_id"],))
-    cur.execute("UPDATE SD_email_verifications SET used = 1 WHERE id = ?", (row["id"],))
+    cur.execute("UPDATE SD_users SET email_verified = 1, verified = 'Yes' WHERE id = %s", (row["user_id"],))
+    cur.execute("UPDATE SD_email_verifications SET used = 1 WHERE id = %s", (row["id"],))
     db.commit()
     db.close()
 
@@ -205,11 +205,11 @@ def resend_email():
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = ?", (user["id"],))
+    cur.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = %s", (user["id"],))
     token = secrets.token_urlsafe(32)
     expires = datetime.utcnow() + timedelta(hours=24)
     cur.execute(
-        "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)",
+        "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (%s, %s, %s)",
         (user["id"], token, expires.isoformat()),
     )
     db.commit()
@@ -234,7 +234,7 @@ def login():
 
         db = get_db()
         cur = db.cursor()
-        cur.execute("SELECT * FROM SD_users WHERE username = ?", (username,))
+        cur.execute("SELECT * FROM SD_users WHERE username = %s", (username,))
         user = dict_from_row(cur, cur.fetchone())
         db.close()
 
@@ -245,9 +245,9 @@ def login():
                 expires = datetime.utcnow() + timedelta(hours=24)
                 db2 = get_db()
                 cur2 = db2.cursor()
-                cur2.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = ?", (user["id"],))
+                cur2.execute("UPDATE SD_email_verifications SET used = 1 WHERE user_id = %s", (user["id"],))
                 cur2.execute(
-                    "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (?, ?, ?)",
+                    "INSERT INTO SD_email_verifications (user_id, token, expires_at) VALUES (%s, %s, %s)",
                     (user["id"], token, expires.isoformat()),
                 )
                 db2.commit()
@@ -292,7 +292,7 @@ def sell():
         cur.execute(
             """INSERT INTO SD_cars (user_id, title, make, model, year, mileage, price, color,
                fuel_type, transmission, description, image_url)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+               VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)""",
             (
                 session["user_id"],
                 request.form["title"].strip(),
@@ -320,7 +320,7 @@ def car_detail(car_id):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT c.*, u.username as seller, u.phone as seller_phone, u.email as seller_email FROM SD_cars c JOIN SD_users u ON c.user_id = u.id WHERE c.id = ?",
+        "SELECT c.*, u.username as seller, u.phone as seller_phone, u.email as seller_email FROM SD_cars c JOIN SD_users u ON c.user_id = u.id WHERE c.id = %s",
         (car_id,),
     )
     car = dict_from_row(cur, cur.fetchone())
@@ -337,10 +337,10 @@ def mark_sold(car_id):
         return redirect(url_for("login"))
     db = get_db()
     cur = db.cursor()
-    cur.execute("SELECT * FROM SD_cars WHERE id = ? AND user_id = ?", (car_id, session["user_id"]))
+    cur.execute("SELECT * FROM SD_cars WHERE id = %s AND user_id = %s", (car_id, session["user_id"]))
     car = dict_from_row(cur, cur.fetchone())
     if car:
-        cur.execute("UPDATE SD_cars SET is_sold = 1 WHERE id = ?", (car_id,))
+        cur.execute("UPDATE SD_cars SET is_sold = 1 WHERE id = %s", (car_id,))
         db.commit()
         flash("Marked as sold.", "success")
     db.close()
@@ -354,7 +354,7 @@ def my_listings():
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT * FROM SD_cars WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
+        "SELECT * FROM SD_cars WHERE user_id = %s ORDER BY created_at DESC", (session["user_id"],)
     )
     cars = dict_from_rows(cur, cur.fetchall())
     db.close()
@@ -370,7 +370,7 @@ def search():
         """SELECT c.*, u.username as seller FROM SD_cars c
            JOIN SD_users u ON c.user_id = u.id
            WHERE c.is_sold = 0 AND (
-               c.make LIKE ? OR c.model LIKE ? OR c.title LIKE ? OR c.description LIKE ?
+               c.make LIKE %s OR c.model LIKE %s OR c.title LIKE %s OR c.description LIKE %s
            ) ORDER BY c.created_at DESC""",
         (f"%{query}%", f"%{query}%", f"%{query}%", f"%{query}%"),
     )
