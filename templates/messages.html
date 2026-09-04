@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Messages - SmartDrive{% endblock %}
+{% block content %}
+<h2>Messages</h2>
+
+<div class="messages-tabs">
+    <button class="tab-btn active" onclick="showTab('received')">Received ({{ received|length }})</button>
+    <button class="tab-btn" onclick="showTab('sent')">Sent ({{ sent|length }})</button>
+</div>
+
+<div id="received" class="tab-content">
+    {% for msg in received %}
+    <a href="{{ url_for('message_thread', car_id=msg.car_id, other_user_id=msg.sender_id) }}" class="message-card {% if not msg.is_read %}unread{% endif %}">
+        <div class="message-thumb">
+            {% if msg.car_image %}
+                <img src="{{ get_image_url(msg.car_image) }}" alt="{{ msg.car_title }}">
+            {% else %}
+                <div class="car-placeholder-sm">No Image</div>
+            {% endif %}
+        </div>
+        <div class="message-body">
+            <div class="message-header">
+                <strong>{{ msg.sender_name }}</strong>
+                <span class="message-car">{{ msg.car_title }}</span>
+                <span class="message-time">{{ msg.created_at.strftime('%d %b %H:%M') }}</span>
+            </div>
+            <p class="message-preview">{{ msg.message[:100] }}{% if msg.message|length > 100 %}...{% endif %}</p>
+        </div>
+    </a>
+    {% else %}
+    <div class="empty-state">
+        <p>No messages received yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<div id="sent" class="tab-content" style="display:none">
+    {% for msg in sent %}
+    <a href="{{ url_for('message_thread', car_id=msg.car_id, other_user_id=msg.receiver_id) }}" class="message-card">
+        <div class="message-thumb">
+            {% if msg.car_image %}
+                <img src="{{ get_image_url(msg.car_image) }}" alt="{{ msg.car_title }}">
+            {% else %}
+                <div class="car-placeholder-sm">No Image</div>
+            {% endif %}
+        </div>
+        <div class="message-body">
+            <div class="message-header">
+                <strong>To: {{ msg.receiver_name }}</strong>
+                <span class="message-car">{{ msg.car_title }}</span>
+                <span class="message-time">{{ msg.created_at.strftime('%d %b %H:%M') }}</span>
+            </div>
+            <p class="message-preview">{{ msg.message[:100] }}{% if msg.message|length > 100 %}...{% endif %}</p>
+        </div>
+    </a>
+    {% else %}
+    <div class="empty-state">
+        <p>No messages sent yet.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+function showTab(tab) {
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tab).style.display = 'block';
+    event.target.classList.add('active');
+}
+</script>
+{% endblock %}

@@ -597,6 +597,136 @@ def delete_car(car_id):
     return redirect(url_for("my_listings"))
 
 
+@app.route("/car/<int:car_id>/message", methods=["POST"])
+def send_message(car_id):
+    if "user_id" not in session:
+        flash("Please login to message the seller.", "error")
+        return redirect(url_for("login"))
+
+    message = request.form.get("message", "").strip()
+    if not message:
+        flash("Message cannot be empty.", "error")
+        return redirect(url_for("car_detail", car_id=car_id))
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT user_id FROM SD_cars WHERE id = %s", (car_id,))
+    row = cur.fetchone()
+    if not row:
+        db.close()
+        flash("Car not found.", "error")
+        return redirect(url_for("index"))
+
+    if row[0] == session["user_id"]:
+        db.close()
+        flash("You cannot message yourself.", "error")
+        return redirect(url_for("car_detail", car_id=car_id))
+
+    cur.execute(
+        "INSERT INTO SD_messages (car_id, sender_id, receiver_id, message) VALUES (%s, %s, %s, %s)",
+        (car_id, session["user_id"], row[0], message),
+    )
+    db.commit()
+    db.close()
+
+    flash("Message sent!", "success")
+    return redirect(url_for("car_detail", car_id=car_id))
+
+
+@app.route("/messages")
+def messages():
+    if "user_id" not in session:
+        flash("Please login to view messages.", "error")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("""
+        SELECT m.*, u.username as sender_name, c.title as car_title, c.image_url as car_image
+        FROM SD_messages m
+        JOIN SD_users u ON m.sender_id = u.id
+        JOIN SD_cars c ON m.car_id = c.id
+        WHERE m.receiver_id = %s
+        ORDER BY m.created_at DESC
+    """, (session["user_id"],))
+    received = dict_from_rows(cur, cur.fetchall())
+
+    cur.execute("""
+        SELECT m.*, u.username as receiver_name, c.title as car_title, c.image_url as car_image
+        FROM SD_messages m
+        JOIN SD_users u ON m.receiver_id = u.id
+        JOIN SD_cars c ON m.car_id = c.id
+        WHERE m.sender_id = %s
+        ORDER BY m.created_at DESC
+    """, (session["user_id"],))
+    sent = dict_from_rows(cur, cur.fetchall())
+
+    cur.execute("UPDATE SD_messages SET is_read = 1 WHERE receiver_id = %s AND is_read = 0", (session["user_id"],))
+    db.commit()
+    db.close()
+
+    return render_template("messages.html", received=received, sent=sent, user=get_user())
+
+
+@app.route("/messages/<int:car_id>/<int:other_user_id>")
+def message_thread(car_id, other_user_id):
+    if "user_id" not in session:
+        flash("Please login.", "error")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("SELECT title FROM SD_cars WHERE id = %s", (car_id,))
+    car_row = cur.fetchone()
+    car_title = car_row[0] if car_row else "Unknown"
+
+    cur.execute("SELECT username FROM SD_users WHERE id = %s", (other_user_id,))
+    user_row = cur.fetchone()
+    other_name = user_row[0] if user_row else "Unknown"
+
+    cur.execute("""
+        SELECT m.*, u.username as sender_name
+        FROM SD_messages m
+        JOIN SD_users u ON m.sender_id = u.id
+        WHERE m.car_id = %s
+          AND ((m.sender_id = %s AND m.receiver_id = %s) OR (m.sender_id = %s AND m.receiver_id = %s))
+        ORDER BY m.created_at ASC
+    """, (car_id, session["user_id"], other_user_id, other_user_id, session["user_id"]))
+    thread = dict_from_rows(cur, cur.fetchall())
+
+    cur.execute("UPDATE SD_messages SET is_read = 1 WHERE car_id = %s AND sender_id = %s AND receiver_id = %s AND is_read = 0",
+                (car_id, other_user_id, session["user_id"]))
+    db.commit()
+    db.close()
+
+    return render_template("message_thread.html", thread=thread, car_id=car_id, car_title=car_title,
+                           other_name=other_name, other_user_id=other_user_id, user=get_user())
+
+
+@app.route("/messages/<int:car_id>/<int:other_user_id>/reply", methods=["POST"])
+def reply_message(car_id, other_user_id):
+    if "user_id" not in session:
+        flash("Please login.", "error")
+        return redirect(url_for("login"))
+
+    message = request.form.get("message", "").strip()
+    if not message:
+        flash("Message cannot be empty.", "error")
+        return redirect(url_for("message_thread", car_id=car_id, other_user_id=other_user_id))
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute(
+        "INSERT INTO SD_messages (car_id, sender_id, receiver_id, message) VALUES (%s, %s, %s, %s)",
+        (car_id, session["user_id"], other_user_id, message),
+    )
+    db.commit()
+    db.close()
+
+    return redirect(url_for("message_thread", car_id=car_id, other_user_id=other_user_id))
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)

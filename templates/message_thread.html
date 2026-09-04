@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}{{ other_name }} - {{ car_title }} - SmartDrive{% endblock %}
+{% block content %}
+<div class="thread-container">
+    <div class="thread-header">
+        <a href="{{ url_for('messages') }}" class="back-link">&larr; Back to Messages</a>
+        <h2>{{ car_title }}</h2>
+        <p>Conversation with <strong>{{ other_name }}</strong></p>
+    </div>
+
+    <div class="thread-messages">
+        {% for msg in thread %}
+        <div class="thread-msg {% if msg.sender_id == user.id %}sent{% else %}received{% endif %}">
+            <div class="thread-msg-header">
+                <strong>{{ msg.sender_name }}</strong>
+                <span class="message-time">{{ msg.created_at.strftime('%d %b %Y, %H:%M') }}</span>
+            </div>
+            <p>{{ msg.message }}</p>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form method="POST" action="{{ url_for('reply_message', car_id=car_id, other_user_id=other_user_id) }}" class="reply-form">
+        <textarea name="message" rows="3" placeholder="Type your reply..." required></textarea>
+        <button type="submit" class="btn btn-primary">Send Reply</button>
+    </form>
+</div>
+{% endblock %}

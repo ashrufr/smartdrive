@@ -114,6 +114,22 @@ def init_db():
         )
     """)
 
+    cur.execute("""
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SD_messages' AND xtype='U')
+        CREATE TABLE SD_messages (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            car_id INT NOT NULL,
+            sender_id INT NOT NULL,
+            receiver_id INT NOT NULL,
+            message NVARCHAR(MAX) NOT NULL,
+            is_read INT DEFAULT 0,
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (car_id) REFERENCES SD_cars(id) ON DELETE CASCADE,
+            FOREIGN KEY (sender_id) REFERENCES SD_users(id),
+            FOREIGN KEY (receiver_id) REFERENCES SD_users(id)
+        )
+    """)
+
     conn.commit()
     conn.close()
 

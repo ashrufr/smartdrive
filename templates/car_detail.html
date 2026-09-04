@@ -64,6 +64,18 @@
             {% endif %}
         </div>
 
+        {% if user and user.id != car.user_id %}
+        <div class="message-form">
+            <h3>Message Seller</h3>
+            <form method="POST" action="{{ url_for('send_message', car_id=car.id) }}">
+                <textarea name="message" rows="3" placeholder="Hi, I'm interested in this car..." required></textarea>
+                <button type="submit" class="btn btn-primary">Send Message</button>
+            </form>
+        </div>
+        {% elif not user %}
+        <p class="login-prompt"><a href="{{ url_for('login') }}">Login</a> to message the seller.</p>
+        {% endif %}
+
         {% if user and user.id == car.user_id and not car.is_sold %}
         <div class="owner-actions">
             <a href="{{ url_for('edit_car', car_id=car.id) }}" class="btn btn-primary">Edit</a>
