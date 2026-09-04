@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 static/uploads/*
 !static/uploads/.gitkeep
+webapp_logs.zip
