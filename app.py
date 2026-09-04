@@ -509,6 +509,66 @@ def dashboard():
     return render_template("dashboard.html", user=user, car_count=car_count, sold_count=sold_count)
 
 
+@app.route("/car/<int:car_id>/edit", methods=["GET", "POST"])
+def edit_car(car_id):
+    if "user_id" not in session:
+        flash("Please login to edit a car listing.", "error")
+        return redirect(url_for("login"))
+
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("SELECT * FROM SD_cars WHERE id = %s", (car_id,))
+    car = dict_from_row(cur, cur.fetchone())
+
+    if not car:
+        db.close()
+        flash("Car not found.", "error")
+        return redirect(url_for("index"))
+
+    if car["user_id"] != session["user_id"]:
+        db.close()
+        flash("You can only edit your own listings.", "error")
+        return redirect(url_for("car_detail", car_id=car_id))
+
+    if request.method == "POST":
+        image_url = car["image_url"]
+        if "image" in request.files:
+            file = request.files["image"]
+            if file and file.filename and allowed_file(file.filename):
+                filename = secure_filename(file.filename)
+                filename = f"{secrets.token_hex(8)}_{filename}"
+                file.save(os.path.join(UPLOAD_FOLDER, filename))
+                image_url = f"uploads/{filename}"
+
+        cur.execute(
+            """UPDATE SD_cars SET title = %s, make = %s, model = %s, year = %s,
+               mileage = %s, price = %s, color = %s, fuel_type = %s,
+               transmission = %s, description = %s, image_url = %s
+               WHERE id = %s""",
+            (
+                request.form["title"].strip(),
+                request.form["make"].strip(),
+                request.form["model"].strip(),
+                int(request.form["year"]),
+                int(request.form.get("mileage", 0)),
+                float(request.form["price"]),
+                request.form.get("color", "").strip(),
+                request.form.get("fuel_type", "Petrol"),
+                request.form.get("transmission", "Automatic"),
+                request.form.get("description", "").strip(),
+                image_url,
+                car_id,
+            ),
+        )
+        db.commit()
+        db.close()
+        flash("Listing updated successfully!", "success")
+        return redirect(url_for("car_detail", car_id=car_id))
+
+    db.close()
+    return render_template("edit_car.html", car=car, user=get_user())
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)

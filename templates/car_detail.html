@@ -65,11 +65,14 @@
         </div>
 
         {% if user and user.id == car.user_id and not car.is_sold %}
-        <form method="POST" action="{{ url_for('mark_sold', car_id=car.id) }}">
-            <button type="submit" class="btn btn-sold" onclick="return confirm('Mark as sold?')">
-                Mark as Sold
-            </button>
-        </form>
+        <div class="owner-actions">
+            <a href="{{ url_for('edit_car', car_id=car.id) }}" class="btn btn-primary">Edit Listing</a>
+            <form method="POST" action="{{ url_for('mark_sold', car_id=car.id) }}" style="display:inline">
+                <button type="submit" class="btn btn-sold" onclick="return confirm('Mark as sold?')">
+                    Mark as Sold
+                </button>
+            </form>
+        </div>
         {% endif %}
     </div>
 </div>

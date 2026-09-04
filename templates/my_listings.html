@@ -5,23 +5,30 @@
 
 <div class="car-grid">
     {% for car in cars %}
-    <a href="{{ url_for('car_detail', car_id=car.id) }}" class="car-card">
-        <div class="car-image">
-            {% if car.image_url %}
-                <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
-            {% else %}
-                <div class="car-placeholder">No Image</div>
-            {% endif %}
-            {% if car.is_sold %}
-                <div class="sold-overlay">SOLD</div>
-            {% endif %}
+    <div class="car-card">
+        <a href="{{ url_for('car_detail', car_id=car.id) }}">
+            <div class="car-image">
+                {% if car.image_url %}
+                    <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+                {% else %}
+                    <div class="car-placeholder">No Image</div>
+                {% endif %}
+                {% if car.is_sold %}
+                    <div class="sold-overlay">SOLD</div>
+                {% endif %}
+            </div>
+            <div class="car-info">
+                <h3>{{ car.title }}</h3>
+                <p class="car-meta">{{ car.year }} &middot; {{ car.mileage|int }} mi</p>
+                <p class="car-price">${{ "{:,.0f}".format(car.price) }}</p>
+            </div>
+        </a>
+        {% if not car.is_sold %}
+        <div class="card-actions">
+            <a href="{{ url_for('edit_car', car_id=car.id) }}" class="btn btn-outline btn-sm">Edit</a>
         </div>
-        <div class="car-info">
-            <h3>{{ car.title }}</h3>
-            <p class="car-meta">{{ car.year }} &middot; {{ car.mileage|int }} mi</p>
-            <p class="car-price">${{ "{:,.0f}".format(car.price) }}</p>
-        </div>
-    </a>
+        {% endif %}
+    </div>
     {% else %}
     <div class="empty-state">
         <h2>No listings yet</h2>
