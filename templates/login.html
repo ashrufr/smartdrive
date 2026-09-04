@@ -3,7 +3,7 @@
 {% block content %}
 <div class="auth-form">
     <h2>Login</h2>
-    <form method="POST">
+    <form method="POST" id="loginForm">
         <label for="username">Username</label>
         <input type="text" id="username" name="username" required>
 
@@ -14,4 +14,21 @@
     </form>
     <p class="auth-switch">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
 </div>
+
+<script>
+const form = document.getElementById('loginForm');
+form.addEventListener('submit', function(e) {
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value;
+    console.log('[Login] Attempt:', { username: username, timestamp: new Date().toISOString() });
+});
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+{% if messages %}
+{% for category, message in messages %}
+console.{{ 'error' if category == 'error' else 'log' }}('[{{ category|upper }}]', '{{ message }}');
+{% endfor %}
+{% endif %}
+{% endwith %}
+</script>
 {% endblock %}
