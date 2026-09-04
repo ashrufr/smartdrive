@@ -1,14 +1,26 @@
-import sqlite3
+import pyodbc
 import os
-
-DB_PATH = os.path.join(os.path.dirname(__file__), "carsales.db")
 
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn_str = os.environ.get("AZURE_SQL_CONNECTION")
+    if not conn_str:
+        raise RuntimeError("AZURE_SQL_CONNECTION environment variable is not set")
+    conn = pyodbc.connect(conn_str)
+    conn.autocommit = False
     return conn
+
+
+def dict_from_row(cursor, row):
+    if row is None:
+        return None
+    columns = [col[0] for col in cursor.description]
+    return dict(zip(columns, row))
+
+
+def dict_from_rows(cursor, rows):
+    columns = [col[0] for col in cursor.description]
+    return [dict(zip(columns, row)) for row in rows]
 
 
 def init_db():
@@ -16,61 +28,65 @@ def init_db():
     cur = conn.cursor()
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password_hash TEXT NOT NULL,
-            phone TEXT DEFAULT '',
-            verified TEXT DEFAULT 'No',
-            email_verified INTEGER DEFAULT 0,
-            phone_verified INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SD_users' AND xtype='U')
+        CREATE TABLE SD_users (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            username NVARCHAR(100) UNIQUE NOT NULL,
+            email NVARCHAR(255) UNIQUE NOT NULL,
+            password_hash NVARCHAR(500) NOT NULL,
+            phone NVARCHAR(50) DEFAULT '',
+            verified NVARCHAR(10) DEFAULT 'No',
+            email_verified INT DEFAULT 0,
+            phone_verified INT DEFAULT 0,
+            created_at DATETIME2 DEFAULT GETUTCDATE()
         )
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS cars (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            title TEXT NOT NULL,
-            make TEXT NOT NULL,
-            model TEXT NOT NULL,
-            year INTEGER NOT NULL,
-            mileage INTEGER DEFAULT 0,
-            price REAL NOT NULL,
-            color TEXT DEFAULT '',
-            fuel_type TEXT DEFAULT 'Gasoline',
-            transmission TEXT DEFAULT 'Automatic',
-            description TEXT DEFAULT '',
-            image_url TEXT DEFAULT '',
-            is_sold INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SD_cars' AND xtype='U')
+        CREATE TABLE SD_cars (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            user_id INT NOT NULL,
+            title NVARCHAR(255) NOT NULL,
+            make NVARCHAR(100) NOT NULL,
+            model NVARCHAR(100) NOT NULL,
+            year INT NOT NULL,
+            mileage INT DEFAULT 0,
+            price FLOAT NOT NULL,
+            color NVARCHAR(50) DEFAULT '',
+            fuel_type NVARCHAR(50) DEFAULT 'Gasoline',
+            transmission NVARCHAR(50) DEFAULT 'Automatic',
+            description NVARCHAR(MAX) DEFAULT '',
+            image_url NVARCHAR(500) DEFAULT '',
+            is_sold INT DEFAULT 0,
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            FOREIGN KEY (user_id) REFERENCES SD_users(id) ON DELETE CASCADE
         )
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS email_verifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            token TEXT UNIQUE NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL,
-            used INTEGER DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SD_email_verifications' AND xtype='U')
+        CREATE TABLE SD_email_verifications (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            user_id INT NOT NULL,
+            token NVARCHAR(500) UNIQUE NOT NULL,
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            expires_at DATETIME2 NOT NULL,
+            used INT DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES SD_users(id) ON DELETE CASCADE
         )
     """)
 
     cur.execute("""
-        CREATE TABLE IF NOT EXISTS phone_verifications (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            code TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            expires_at TIMESTAMP NOT NULL,
-            used INTEGER DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='SD_phone_verifications' AND xtype='U')
+        CREATE TABLE SD_phone_verifications (
+            id INT IDENTITY(1,1) PRIMARY KEY,
+            user_id INT NOT NULL,
+            code NVARCHAR(10) NOT NULL,
+            created_at DATETIME2 DEFAULT GETUTCDATE(),
+            expires_at DATETIME2 NOT NULL,
+            used INT DEFAULT 0,
+            FOREIGN KEY (user_id) REFERENCES SD_users(id) ON DELETE CASCADE
         )
     """)
 
@@ -80,4 +96,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-    print("Database initialized.")
+    print("Azure SQL database initialized with SD_ tables.")
