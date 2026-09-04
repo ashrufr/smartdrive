@@ -8,6 +8,7 @@ import os
 
 app = Flask(__name__)
 app.secret_key = "carsales-secret-key-change-in-production"
+app.config["GMAIL_SMTP_USER"] = os.environ.get("GMAIL_SMTP_USER", "Not configured")
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
