@@ -11,7 +11,7 @@
     <a href="{{ url_for('car_detail', car_id=car.id) }}" class="car-card">
         <div class="car-image">
             {% if car.image_url %}
-                <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+                <img src="{{ get_image_url(car.image_url) }}" alt="{{ car.title }}">
             {% else %}
                 <div class="car-placeholder">No Image</div>
             {% endif %}

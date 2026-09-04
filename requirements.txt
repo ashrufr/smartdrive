@@ -1,3 +1,4 @@
 flask
 werkzeug
 pymssql
+azure-storage-blob

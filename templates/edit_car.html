@@ -71,7 +71,7 @@
             <label for="image">Car Photo</label>
             {% if car.image_url %}
             <div class="current-image">
-                <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+                <img src="{{ get_image_url(car.image_url) }}" alt="{{ car.title }}">
                 <p class="field-info">Leave empty to keep current image</p>
             </div>
             {% endif %}

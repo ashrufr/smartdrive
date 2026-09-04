@@ -4,7 +4,7 @@
 <div class="car-detail">
     <div class="car-detail-image">
         {% if car.image_url %}
-            <img src="{{ url_for('static', filename=car.image_url) }}" alt="{{ car.title }}">
+            <img src="{{ get_image_url(car.image_url) }}" alt="{{ car.title }}">
         {% else %}
             <div class="car-placeholder-large">No Image Available</div>
         {% endif %}

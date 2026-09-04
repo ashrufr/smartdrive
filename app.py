@@ -3,17 +3,16 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from db import get_db, init_db, dict_from_row, dict_from_rows
 from email_utils import send_email
+from storage_utils import upload_image, get_image_url, delete_image
 from datetime import datetime, timedelta
-from urllib.parse import urljoin
 import secrets
 import os
 
 app = Flask(__name__)
 app.secret_key = "carsales-secret-key-change-in-production"
 app.config["GMAIL_SMTP_USER"] = os.environ.get("GMAIL_SMTP_USER", "Not configured")
+app.jinja_env.globals.update(get_image_url=get_image_url)
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "static", "uploads")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
 
@@ -290,10 +289,9 @@ def sell():
         if "image" in request.files:
             file = request.files["image"]
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filename = f"{secrets.token_hex(8)}_{filename}"
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_url = f"uploads/{filename}"
+                blob_name = upload_image(file)
+                if blob_name:
+                    image_url = blob_name
 
         db = get_db()
         cur = db.cursor()
@@ -535,10 +533,10 @@ def edit_car(car_id):
         if "image" in request.files:
             file = request.files["image"]
             if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(file.filename)
-                filename = f"{secrets.token_hex(8)}_{filename}"
-                file.save(os.path.join(UPLOAD_FOLDER, filename))
-                image_url = f"uploads/{filename}"
+                delete_image(car["image_url"])
+                blob_name = upload_image(file)
+                if blob_name:
+                    image_url = blob_name
 
         cur.execute(
             """UPDATE SD_cars SET title = %s, make = %s, model = %s, year = %s,
