@@ -171,7 +171,9 @@ def verify_email(token):
         db.close()
         return redirect(url_for("index"))
 
-    expires = datetime.fromisoformat(row["expires_at"])
+    expires = row["expires_at"]
+    if isinstance(expires, str):
+        expires = datetime.fromisoformat(expires)
     if datetime.utcnow() > expires:
         flash("Verification link has expired.", "error")
         db.close()
