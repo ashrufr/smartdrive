@@ -33,7 +33,8 @@ def get_user():
 
 
 def send_verification_email(user_email, token):
-    verify_url = urljoin(request.host_url, url_for("verify_email", token=token))
+    verify_path = url_for("verify_email", token=token)
+    verify_url = request.host_url.rstrip("/") + verify_path
     subject = "Verify your email - SmartDrive"
     body = f"""
     <h2>Welcome to SmartDrive!</h2>
@@ -162,21 +163,26 @@ def verify_email(token):
     db = get_db()
     cur = db.cursor()
     cur.execute(
-        "SELECT * FROM SD_email_verifications WHERE token = %s AND used = 0", (token,)
+        "SELECT * FROM SD_email_verifications WHERE token = %s", (token,)
     )
     row = dict_from_row(cur, cur.fetchone())
 
     if not row:
-        flash("Invalid or expired verification link.", "error")
         db.close()
+        flash("Invalid or expired verification link.", "error")
+        return redirect(url_for("index"))
+
+    if row["used"]:
+        db.close()
+        flash("This verification link has already been used.", "error")
         return redirect(url_for("index"))
 
     expires = row["expires_at"]
     if isinstance(expires, str):
         expires = datetime.fromisoformat(expires)
     if datetime.utcnow() > expires:
-        flash("Verification link has expired.", "error")
         db.close()
+        flash("Verification link has expired. Please request a new one.", "error")
         return redirect(url_for("resend_email"))
 
     cur.execute("UPDATE SD_users SET email_verified = 1, verified = 'Yes' WHERE id = %s", (row["user_id"],))
