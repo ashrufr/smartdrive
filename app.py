@@ -403,6 +403,106 @@ def test_email():
     return render_template("test_email.html", user=get_user(), gmail_user=gmail_user)
 
 
+@app.route("/dashboard", methods=["GET", "POST"])
+def dashboard():
+    if "user_id" not in session:
+        flash("Please login to access your dashboard.", "error")
+        return redirect(url_for("login"))
+
+    user = get_user()
+    db = get_db()
+    cur = db.cursor()
+
+    if request.method == "POST":
+        action = request.form.get("action")
+
+        if action == "update_profile":
+            username = request.form["username"].strip()
+            email = request.form["email"].strip()
+            phone = request.form.get("phone", "").strip()
+
+            if not username or not email:
+                flash("Username and email are required.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            cur.execute(
+                "SELECT id FROM SD_users WHERE (username = %s OR email = %s) AND id != %s",
+                (username, email, user["id"]),
+            )
+            existing = cur.fetchone()
+            if existing:
+                flash("Username or email already taken.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            cur.execute(
+                "UPDATE SD_users SET username = %s, email = %s, phone = %s WHERE id = %s",
+                (username, email, phone, user["id"]),
+            )
+            db.commit()
+            flash("Profile updated successfully!", "success")
+
+        elif action == "change_password":
+            current_password = request.form["current_password"]
+            new_password = request.form["new_password"]
+            confirm_password = request.form["confirm_password"]
+
+            cur.execute("SELECT password_hash FROM SD_users WHERE id = %s", (user["id"],))
+            row = cur.fetchone()
+            if not row or not check_password_hash(row[0], current_password):
+                flash("Current password is incorrect.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            if new_password != confirm_password:
+                flash("New passwords do not match.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            if len(new_password) < 6:
+                flash("Password must be at least 6 characters.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            cur.execute(
+                "UPDATE SD_users SET password_hash = %s WHERE id = %s",
+                (generate_password_hash(new_password), user["id"]),
+            )
+            db.commit()
+            flash("Password changed successfully!", "success")
+
+        elif action == "delete_account":
+            password = request.form["password"]
+            cur.execute("SELECT password_hash FROM SD_users WHERE id = %s", (user["id"],))
+            row = cur.fetchone()
+            if not row or not check_password_hash(row[0], password):
+                flash("Incorrect password. Account not deleted.", "error")
+                db.close()
+                return redirect(url_for("dashboard"))
+
+            cur.execute("DELETE FROM SD_cars WHERE user_id = %s", (user["id"],))
+            cur.execute("DELETE FROM SD_email_verifications WHERE user_id = %s", (user["id"],))
+            cur.execute("DELETE FROM SD_phone_verifications WHERE user_id = %s", (user["id"],))
+            cur.execute("DELETE FROM SD_users WHERE id = %s", (user["id"],))
+            db.commit()
+            db.close()
+            session.clear()
+            flash("Your account has been deleted.", "success")
+            return redirect(url_for("index"))
+
+        db.close()
+        return redirect(url_for("dashboard"))
+
+    cur.execute("SELECT COUNT(*) FROM SD_cars WHERE user_id = %s", (user["id"],))
+    car_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM SD_cars WHERE user_id = %s AND is_sold = 1", (user["id"],))
+    sold_count = cur.fetchone()[0]
+    db.close()
+
+    return render_template("dashboard.html", user=user, car_count=car_count, sold_count=sold_count)
+
+
 if __name__ == "__main__":
     init_db()
     app.run(debug=True)

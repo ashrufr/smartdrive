@@ -17,7 +17,7 @@
             {% if user %}
                 <a href="{{ url_for('sell') }}" class="btn btn-primary">Sell Car</a>
                 <a href="{{ url_for('my_listings') }}">My Listings</a>
-                <span class="nav-user">{{ user.username }}</span>
+                <a href="{{ url_for('dashboard') }}">{{ user.username }}</a>
                 <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
             {% else %}
                 <a href="{{ url_for('login') }}">Login</a>
