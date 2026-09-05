@@ -19,7 +19,7 @@
         <div class="car-info">
             <h3>{{ car.title }}</h3>
             <p class="car-meta">{{ car.year }} &middot; {{ car.mileage|int }} mi &middot; {{ car.fuel_type }}</p>
-            <p class="car-price">${{ "{:,.0f}".format(car.price) }}</p>
+            <p class="car-price">R{{ "{:,.0f}".format(car.price) }}</p>
             <p class="car-seller">Listed by {{ car.seller }}</p>
         </div>
     </a>

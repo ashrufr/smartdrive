@@ -20,7 +20,7 @@
             <div class="car-info">
                 <h3>{{ car.title }}</h3>
                 <p class="car-meta">{{ car.year }} &middot; {{ car.mileage|int }} mi</p>
-                <p class="car-price">${{ "{:,.0f}".format(car.price) }}</p>
+                <p class="car-price">R{{ "{:,.0f}".format(car.price) }}</p>
             </div>
         </a>
         {% if not car.is_sold %}
